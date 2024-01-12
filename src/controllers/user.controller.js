@@ -263,4 +263,161 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
   }
 });
 
-export { registerUser, loginUser, logoutUser, refreshAccessToken };
+const changeCurrentPassword = asyncHandler(async (req, res) => {
+  //Its a protected route coming through middleware so req.user will be present
+
+  //First get old and new password
+
+  //Check is old password is coorect password that is stored in database
+  //You can also have a confirm password and then check if they are equal
+  //then save the current password into data base and return the value without password
+  const { oldPassword, newPassword, confPassword } = req.body;
+  //Checking if new password is equal to conf password
+  if (!(newPassword === confPassword)) {
+    throw new ApiError(400, "New Password is not equal to confirmed password");
+  }
+
+  const user = await User.findById(req.user?._id);
+  const isPasswordCorrect = await user.isPasswordCorrect(oldPassword);
+  if (!isPasswordCorrect) {
+    throw new ApiError(400, "Old password is wrong enter correct old password");
+  }
+  user.password = newPassword; //local object query
+  await user.save({ validateBeforeSave: false }); //data base query to save password
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Password is Changed succesfully"));
+});
+
+//note:In production level code different api is written for file handling and data handling because of less network traffic
+
+const getCurrentUser = asyncHandler(async (req, res) => {
+  // i dont understand why this is required
+  return res
+    .status(200)
+    .json(new ApiResponse(200, req.user, "User fetched successfully"));
+});
+
+const updateUserAccountDetails = asyncHandler(async (req, res) => {
+  //its a secured route so req.user will be present
+  //Fullname or email is pesent or not check
+  //then find by user id and update
+  //then send succesfull json response
+  const { fullname, email } = req.body;
+  //Checking whether on field is present or not
+  if (!fullname && !email) {
+    throw new ApiError(
+      400,
+      "Atleast enter one field fullname or email to change"
+    );
+
+    const userobject = {};
+    if (fullname) {
+      userobject.fullname = fullname;
+    }
+    if (email) {
+      userobject.email = email;
+    }
+    const user = await User.findByIdAndUpdate(
+      req.user?._id,
+      {
+        $set: userobject,
+      },
+      { new: true } //This returns the new object
+    ).select("-password");
+
+    if (!user) {
+      throw new ApiError(500, "Internal server error new details not saved");
+    }
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, { user }, "User Details updated succesfully"));
+  }
+});
+
+//different api route to update files
+const updateUserAvatar = asyncHandler(async (req, res) => {
+  //It is also a secured route so it  will have req.user
+  //This route will have multer injected in it to recieve files
+  //Check for local path
+  //Update on cloudinary
+  //check for cloudinary url
+  //Save in mongoDB
+  //Check for saved data
+  //returns json response
+  const avatarLocalPath = req?.file?.path;
+
+  if (!avatarLocalPath) {
+    throw new ApiError(400, "Avatar file not present");
+  }
+
+  const avatar = await uploadOnCloudinary(avatarLocalPath);
+  if (!avatar) {
+    throw new ApiError(500, "Avatar file not uploaded on cloudinary");
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: { avatar: avatar },
+    },
+    { new: true }
+  ).select("-password");
+
+  if (!user) {
+    throw new ApiError(500, "Avatar file not uploaded on database");
+  }
+
+  res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        { avatar: user.avatar },
+        "Avatar file uploaded succesfully"
+      )
+    );
+});
+
+const updateUserCoverImage = asyncHandler(async (req, res) => {
+  const coverImageLocalPath = req.file?.path;
+
+  if (!coverImageLocalPath) {
+    throw new ApiError(400, "Cover image file is missing");
+  }
+
+  //TODO: delete old image - assignment
+
+  const coverImage = await uploadOnCloudinary(coverImageLocalPath);
+
+  if (!coverImage.url) {
+    throw new ApiError(400, "Error while uploading on avatar");
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        coverImage: coverImage.url,
+      },
+    },
+    { new: true }
+  ).select("-password");
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user, "Cover image updated successfully"));
+});
+
+export {
+  registerUser,
+  loginUser,
+  logoutUser,
+  refreshAccessToken,
+  changeCurrentPassword,
+  getCurrentUser,
+  updateUserAccountDetails,
+  updateUserAvatar,
+  updateUserCoverImage,
+};
