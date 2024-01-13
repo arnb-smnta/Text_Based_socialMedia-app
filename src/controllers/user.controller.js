@@ -58,6 +58,8 @@ return respone to user client
 
   const { username, email, fullName, password } = req.body;
 
+  console.log(`${req.body} from register controller`);
+
   //validations of recieved fields start
 
   //non empty validation
@@ -209,7 +211,7 @@ const logoutUser = asyncHandler(async (req, res) => {
     req.user._id,
     {
       $unset: {
-        refreshToken: undefined, //this.removes the field from the document
+        refreshToken: 1, //this.removes the field from the document
       },
     },
     {
@@ -258,7 +260,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
       .json(new ApiResponse(200, {}, "new acces token generated"));
   } catch (error) {
     throw new ApiError(
-      401,
+      200,
       `Problem in generating new refresh token : ${error}`
     );
   }
