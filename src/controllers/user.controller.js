@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { User } from "../models/user.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
@@ -410,6 +411,142 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, user, "Cover image updated successfully"));
 });
 
+const getUserChannelProfile = asyncHandler(async (req, res) => {
+  //Goal of this function
+  //1.getting number of subscribers this channel have
+  //2.Getting number of subscribed channels by the  channel clicked
+  //3.To see if a certain channel page is opened user is subscribed to the channel or not {True or False value}
+  //Data will come from the params in form of username of the channel
+  //
+
+  //Workflow
+  //Fetching username from params
+  //Checking if username is present or not
+  //Using aggregation pipelines Finding the channel using username
+  //Using aggregation pipelines finding the subscribers of that channel by counting the channel ids in subscriptions
+  //Using aggregation pipeline finding the number of channels the username channel has subscribed by finding its id in channels
+  //Is subscribed field by looking if the users id exists in the channels subscribers list will be sending true and false values
+  //
+  //
+  //
+
+  //Data Fetching from params
+
+  const { username } = req.params;
+
+  //Checking params for username
+  if (!username?.trim()) {
+    throw new ApiError(400, "Username not found");
+  }
+
+  const channel = await User.aggregate([
+    {
+      $match: {
+        username: username?.toLowerCase(),
+      },
+    },
+    {
+      $lookup: {
+        from: "subscrptions",
+        localField: "_id",
+        foreignField: "channel",
+        as: "subscribers",
+      },
+    },
+    {
+      $lookup: {
+        from: "subscriptions",
+        localField: "_id",
+        foreignField: "subscriber",
+        as: "subscribedTo",
+      },
+    },
+    {
+      $addFields: {
+        subscribersCount: {
+          $size: "$subscribers",
+        },
+        channelIsSubscribedToCount: {
+          $size: "$subscribedTo",
+        },
+        isSubscribed: {
+          $cond: {
+            if: { $in: [req.user?._id, "$subscribers.subscriber"] },
+            then: true,
+            else: false,
+          },
+        },
+      },
+    },
+    {
+      $project: {
+        fullName: 1,
+        username: 1,
+        subscribersCount: 1,
+        channelIsSubscribedToCount: 1,
+        isSubscribed: 1,
+        avatar: 1,
+        coverImage: 1,
+        email: 1,
+      },
+    },
+  ]);
+
+  if (!channel.length) {
+    throw new ApiError("404", "Channel does not exists");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, channel[0], "User Channel Fetched succesfully"));
+});
+//Tricky part in aggrgation Pipelines
+//Aggrgation pipelines .aggragate([{condition},{condition},{condition},....n no of conditions]) returns an array
+const getWatchHistory = asyncHandler(async (req, res) => {
+  //Getting watch history of the user that is logged in
+  const user = await User.aggregate([
+    {
+      $match: {
+        _id: new mongoose.Types.ObjectId(req.user?._id),
+      },
+    },
+    {
+      $lookup: {
+        from: "videos",
+        localField: "watchHistory",
+        foreignField: "_id",
+        as: "watchHistory",
+        pipeline: [
+          {
+            $lookup: {
+              from: "users",
+              localField: "owner",
+              foreignField: "_id",
+              as: "owner",
+              pipeline: [
+                {
+                  $project: {
+                    fullName: 1,
+                    username: 1,
+                    avatar: 1,
+                  },
+                },
+              ],
+            },
+          },
+          {
+            $addFields: {
+              owner: {
+                $first: "$owner",
+              },
+            },
+          },
+        ],
+      },
+    },
+  ]);
+});
+
 export {
   registerUser,
   loginUser,
@@ -420,4 +557,6 @@ export {
   updateUserAccountDetails,
   updateUserAvatar,
   updateUserCoverImage,
+  getUserChannelProfile,
+  getWatchHistory,
 };
