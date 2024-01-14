@@ -5,20 +5,18 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import uploadOnCloudinary from "../utils/cloudinary.js";
 
-const isStrongPassword = (password) => {
+const isStrongPassword = async (password) => {
   // At least 8 characters, at least 2 uppercase letters, and at least 1 special character
   const passwordRegex =
     /^(?=.*[A-Z].*[A-Z])(?=.*[!@#$%^&*()_+{}\[\]:;<>,.?~\\/-]).{8,}$/;
 
-  console.log(password);
-
-  return passwordRegex.test(password);
+  return await passwordRegex.test(password);
 };
 
-const validemail = (email) => {
+const validemail = async (email) => {
   // Regular expression for a basic email validation
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
+  return await emailRegex.test(email);
 };
 const options = {
   httpOnly: true,
@@ -57,8 +55,6 @@ return respone to user client
   //get user details from frontend
 
   const { username, email, fullName, password } = req.body;
-
-  console.log(`${req.body} from register controller`);
 
   //validations of recieved fields start
 
@@ -123,8 +119,6 @@ return respone to user client
     username: username.toLowerCase(),
   });
 
-  console.log(user);
-
   const createdUser = await User.findById(user._id).select(
     "-password -refreshToken"
   );
@@ -161,49 +155,47 @@ const loginUser = asyncHandler(async (req, res) => {
 
   //Finding user in the database
 
-  try {
-    const user = await User.findOne({
-      $or: [{ username }, { email }],
-    });
+  const user = await User.findOne({
+    $or: [{ username }, { email }],
+  });
 
-    //checking if user is present or not
+  //checking if user is present or not
 
-    if (!user) {
-      throw new ApiError(401, "Invalid Username or Email signup!!");
-    }
-
-    const isPasswordValid = await user.isPasswordCorrect(password);
-
-    if (!isPasswordValid) {
-      throw new ApiError(401, "Wrong Password");
-    }
-
-    const { accessToken, refreshToken } = await generateAccessandRefreshToken(
-      user._id
-    );
-
-    const loggedInUser = await User.findById(user._id).select(
-      "-password -refreshToken"
-    );
-
-    return res
-      .status(200)
-      .cookie("accessToken", accessToken, options)
-      .cookie("refreshToken", refreshToken, options)
-      .json(
-        new ApiResponse(
-          200,
-          {
-            user: loggedInUser,
-            accessToken,
-            refreshToken,
-          },
-          "User logged in succesfully"
-        )
-      );
-  } catch (error) {
-    throw new ApiError(500, "Something wentwrong while logging in");
+  if (!user) {
+    console.log("inside user");
+    throw new ApiError(401, "Invalid Username or Email signup!!");
   }
+
+  const isPasswordValid = await user.isPasswordCorrect(password);
+
+  if (!isPasswordValid) {
+    console.log("password wrong function");
+    throw new ApiError(401, "Wrong Password");
+  }
+
+  const { accessToken, refreshToken } = await generateAccessandRefreshToken(
+    user._id
+  );
+
+  const loggedInUser = await User.findById(user._id).select(
+    "-password -refreshToken"
+  );
+
+  return res
+    .status(200)
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", refreshToken, options)
+    .json(
+      new ApiResponse(
+        200,
+        {
+          user: loggedInUser,
+          accessToken,
+          refreshToken,
+        },
+        "User logged in succesfully"
+      )
+    );
 });
 
 const logoutUser = asyncHandler(async (req, res) => {
@@ -223,7 +215,7 @@ const logoutUser = asyncHandler(async (req, res) => {
     .status(200)
     .clearCookie("accessToken", options)
     .clearCookie("refreshToken", options)
-    .json(new ApiResponse(401, {}, "User succesfully logout"));
+    .json(new ApiResponse(200, {}, "User succesfully logout"));
 });
 import jwt from "jsonwebtoken";
 const refreshAccessToken = asyncHandler(async (req, res) => {
@@ -313,30 +305,30 @@ const updateUserAccountDetails = asyncHandler(async (req, res) => {
       400,
       "Atleast enter one field fullname or email to change"
     );
-
-    const userobject = {};
-    if (fullname) {
-      userobject.fullname = fullname;
-    }
-    if (email) {
-      userobject.email = email;
-    }
-    const user = await User.findByIdAndUpdate(
-      req.user?._id,
-      {
-        $set: userobject,
-      },
-      { new: true } //This returns the new object
-    ).select("-password");
-
-    if (!user) {
-      throw new ApiError(500, "Internal server error new details not saved");
-    }
-
-    return res
-      .status(200)
-      .json(new ApiResponse(200, { user }, "User Details updated succesfully"));
   }
+
+  const userobject = {};
+  if (fullname) {
+    userobject.fullName = fullname;
+  }
+  if (email) {
+    userobject.email = email;
+  }
+  const user = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: userobject,
+    },
+    { new: true } //This returns the new object
+  ).select("-password");
+
+  if (!user) {
+    throw new ApiError(500, "Internal server error new details not saved");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, { user }, "User Details updated succesfully"));
 });
 
 //different api route to update files
@@ -547,6 +539,15 @@ const getWatchHistory = asyncHandler(async (req, res) => {
       },
     },
   ]);
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        user[0].watchHistory,
+        "Watchhistory fetched succesfully"
+      )
+    );
 });
 
 export {
