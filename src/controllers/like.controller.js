@@ -8,7 +8,7 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
   //TODO: toggle like on video
 
-  if (!videoId) {
+  if (!isValidObjectId(videoId)) {
     throw new ApiError("Video id is required");
   }
 
@@ -30,7 +30,7 @@ const toggleCommentLike = asyncHandler(async (req, res) => {
   const { commentId } = req.params;
   //TODO: toggle like on comment
 
-  if (!commentId) {
+  if (!isValidObjectId(commentId)) {
     throw new ApiError(404, "Comment not found");
   }
 
@@ -51,7 +51,7 @@ const toggleTweetLike = asyncHandler(async (req, res) => {
   const { tweetId } = req.params;
   //TODO: toggle like on tweet
 
-  if (!tweetId) {
+  if (!isValidObjectId(tweetId)) {
     throw new ApiError("tweet does not exists");
   }
 
@@ -78,7 +78,24 @@ const getLikedVideos = asyncHandler(async (req, res) => {
         likedBy: `${mongoose.Types.ObjectId(req.user?._id)}`,
       },
     },
+    {
+      $match: {
+        video: { $ne: null },
+      },
+    },
+    {
+      $lookup: {
+        from: "videos",
+        localField: "video",
+        foreignField: "_id",
+        as: "video",
+      },
+    },
   ]);
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, { likedVideos }, "Videos succesfully fetched"));
 });
 
 export { toggleCommentLike, toggleTweetLike, toggleVideoLike, getLikedVideos };
