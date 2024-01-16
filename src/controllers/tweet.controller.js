@@ -41,14 +41,69 @@ const createTweet = asyncHandler(async (req, res) => {
 
 const getUserTweets = asyncHandler(async (req, res) => {
   // TODO: get user tweets
+
+  /*const tweets = await User.aggregate([
+    {
+      $match: { id: mongoose.Types.ObjectId(req.user?._id) },
+    },
+    {
+      $lookup: {
+        from: "tweets",
+        localField: "_id",
+        foreignField: "owner",
+        as: "tweets",
+      },
+    },
+  ]);*/
+
+  const { userId } = req.params;
+
+  const tweets = await Tweet.aggregate([{ $match: { owner: `${userId}` } }]);
+
+  if (!tweets.length) {
+    throw new ApiError(404, "No tweets found");
+  }
+
+  res
+    .status(200)
+    .json(new ApiResponse(200, { tweets }, "Tweets fetched succesfully"));
 });
 
 const updateTweet = asyncHandler(async (req, res) => {
   //TODO: update tweet
+
+  const { tweetId } = req.params;
+  const { content } = req.body;
+
+  const newTweet = await Tweet.findByIdAndUpdate(
+    tweetId,
+    {
+      $set: {
+        content: content,
+      },
+    },
+    { new: true }
+  );
+
+  if (!newTweet) {
+    throw new ApiError(404, "Tweet not found");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, { newTweet }, "Tweet updated succesfully"));
 });
 
 const deleteTweet = asyncHandler(async (req, res) => {
   //TODO: delete tweet
+
+  const { tweetId } = req.params;
+
+  await Tweet.findByIdAndDelete(tweetId);
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Tweet deleted succesfully"));
 });
 
 export { createTweet, getUserTweets, updateTweet, deleteTweet };
