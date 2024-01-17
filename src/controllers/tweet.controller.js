@@ -42,6 +42,11 @@ const createTweet = asyncHandler(async (req, res) => {
 const getUserTweets = asyncHandler(async (req, res) => {
   // TODO: get user tweets
 
+  //Things to do
+
+  //get list of tweets from user id
+  //pipeline to add likes and number of likes to it
+
   /*const tweets = await User.aggregate([
     {
       $match: { id: mongoose.Types.ObjectId(req.user?._id) },
@@ -58,7 +63,31 @@ const getUserTweets = asyncHandler(async (req, res) => {
 
   const { userId } = req.params;
 
-  const tweets = await Tweet.aggregate([{ $match: { owner: `${userId}` } }]);
+  const tweets = await Tweet.aggregate([
+    { $match: { owner: `${new mongoose.Types.ObjectId(userId)}` } },
+    {
+      $lookup: {
+        from: "likes",
+        localField: "_id",
+        foreignField: "tweet",
+        as: "tweetlikes",
+        pipeline: [
+          {
+            $project: {
+              username: 1,
+            },
+          },
+        ],
+      },
+    },
+    {
+      $addFields: {
+        likecount: {
+          $size: "$tweetlikes",
+        },
+      },
+    },
+  ]);
 
   if (!tweets.length) {
     throw new ApiError(404, "No tweets found");
@@ -72,8 +101,32 @@ const getUserTweets = asyncHandler(async (req, res) => {
 const updateTweet = asyncHandler(async (req, res) => {
   //TODO: update tweet
 
+  //get tweet id
+  //get new content
+  //normal checks id -valid? content-present? tweetpresent of that id?
+  //match if the user is owner of the tweet
+  //Update tweet
+  //check for updated tweet
   const { tweetId } = req.params;
   const { content } = req.body;
+  if (!isValidObjectId(tweetId)) {
+    throw new ApiError(400, "Invalid tweet id");
+  }
+
+  if (!content) {
+    throw new ApiError(400, "Content cant be empty");
+  }
+
+  const tweet = await Tweet.findById(tweetId);
+  if (!tweet) {
+    throw new ApiError("Tweet not found");
+  }
+  if (!(tweet.owner.toString() === req.user._id.toString())) {
+    throw new ApiError(
+      400,
+      "You can not edit the tweet you are not the original creator"
+    );
+  }
 
   const newTweet = await Tweet.findByIdAndUpdate(
     tweetId,
@@ -86,7 +139,7 @@ const updateTweet = asyncHandler(async (req, res) => {
   );
 
   if (!newTweet) {
-    throw new ApiError(404, "Tweet not found");
+    throw new ApiError(500, "Tweet not editted something went wrong");
   }
 
   return res
@@ -97,8 +150,27 @@ const updateTweet = asyncHandler(async (req, res) => {
 const deleteTweet = asyncHandler(async (req, res) => {
   //TODO: delete tweet
 
-  const { tweetId } = req.params;
+  //Check for valid id
+  //check for owner of the tweet = user
+  //delete tweet
 
+  const { tweetId } = req.params;
+  if (!isValidObjectId(tweetId)) {
+    throw new ApiError(400, "TweetID is not valid");
+  }
+
+  const tweet = await Tweet.findById(tweetId);
+
+  if (!tweet) {
+    throw new ApiError(404, "Tweet not found");
+  }
+
+  if (!(tweet?.owner.toString() === req.user?._id.toString())) {
+    throw new ApiError(
+      400,
+      "You can not delete the tweet you are not the owner"
+    );
+  }
   await Tweet.findByIdAndDelete(tweetId);
 
   return res

@@ -52,6 +52,11 @@ const publishAVideo = asyncHandler(async (req, res) => {
     throw new ApiError(500, "internal server error video not published");
   }
 
+  const videoUpload = await Video.findById(publishedvideo?._id);
+  if (!videoUpload) {
+    throw new ApiError(500, "Video not uploaded please try again");
+  }
+
   return res
     .status(200)
     .json(
