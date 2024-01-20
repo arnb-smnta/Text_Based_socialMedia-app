@@ -11,19 +11,17 @@ CONTROLLERS and Routes along with Response and Error are written in Production S
 
 
 List of controllers
-Dashboard
-comments
-likes
-videos
-user 
-healthcheck 
-tweets
+- Dashboard
+- comments
+- likes
+- videos
+- user 
+- healthcheck 
+- tweets
 
-
+<ul>
 Main features
-1.Authorization is done with a custom middleware using cookies by implementing the concepts of access and refresh tokens with the help of JWT .
-2.Pagination is done with a js library package Aggregate Paginate
-
-3.Aggregation pipelines are used to fetch data from database where cross model data are required with sub pipelines also written for proper data fetching.
-
-4.We have also encrypted the passwords and refresh token using library called BCRYPTJS  before saving it in the database to prevent password leaking in case of database leaking.
+<li>1.Authorization is done with a custom middleware using cookies by implementing the concepts of access and refresh tokens with the help of JWT .<li/>
+<li>2.Pagination is done with a js library package Aggregate Paginate<li/>
+<li>3.Aggregation pipelines are used to fetch data from database where cross model data are required with sub pipelines also written for proper data fetching.<li/>
+<li>4.We have also encrypted the passwords and refresh token using library called BCRYPTJS  before saving it in the database to prevent password leaking in case of database leaking.<li/><ul/>
