@@ -23,8 +23,10 @@ const publishAVideo = asyncHandler(async (req, res) => {
   if (!title || !description) {
     throw new ApiError(404, "Title or description not found");
   }
+
+  console.log(req.files);
   const videoFileLocalPath = req.files?.videoFile[0].path;
-  const thumbnailLocalPath = req.files?.thumbanail[0].path;
+  const thumbnailLocalPath = req.files?.thumbnail[0].path;
 
   if (!videoFileLocalPath || !thumbnailLocalPath) {
     throw new ApiError(402, "Video file and thumbnail both required");
@@ -70,7 +72,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
 const getVideoById = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
   //TODO: get video by id
-
+  console.log(videoId);
   //check for proper video id
   //find video and check for published status
   //if not published check for owner if owner and user are same send video
@@ -99,7 +101,7 @@ const getVideoById = asyncHandler(async (req, res) => {
       .status(200)
       .json(new ApiResponse(200, { video }, "Video fetched succesfully"));
   } else {
-    const updatedVideo = await Video.pipeline([
+    const updatedVideo = await Video.aggregate([
       {
         $match: {
           _id: new mongoose.Types.ObjectId(videoId),
@@ -331,7 +333,7 @@ const deleteVideo = asyncHandler(async (req, res) => {
 
       await deleteOnCloudinary(video.videoFile, "video");
       await deleteOnCloudinary(video.thumbanail);
-      //delete likes
+      //delete likesnpm run sa
       //delete comments
     })
     .catch((err) => {
