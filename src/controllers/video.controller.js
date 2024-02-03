@@ -72,7 +72,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
 const getVideoById = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
   //TODO: get video by id
-  console.log(videoId);
+
   //check for proper video id
   //find video and check for published status
   //if not published check for owner if owner and user are same send video
@@ -101,6 +101,7 @@ const getVideoById = asyncHandler(async (req, res) => {
       .status(200)
       .json(new ApiResponse(200, { video }, "Video fetched succesfully"));
   } else {
+    console.log(new mongoose.Types.ObjectId(videoId));
     const updatedVideo = await Video.aggregate([
       {
         $match: {
@@ -120,7 +121,7 @@ const getVideoById = asyncHandler(async (req, res) => {
           from: "users",
           localField: "owner",
           foreignField: "_id",
-          as: "owner",
+          as: "ownerdetails",
           pipeline: [
             {
               $lookup: {
@@ -168,9 +169,11 @@ const getVideoById = asyncHandler(async (req, res) => {
         $addFields: {
           likescount: { $size: "$videolikes" },
           isLiked: {
-            $cond: { if: { $in: [req.user?._id, "$likes.likedBy"] } },
-            then: true,
-            else: false,
+            $cond: {
+              if: { $in: [req.user?._id, "$videolikes.likedBy"] },
+              then: true,
+              else: false,
+            },
           },
           totalcomments: { $size: "$comments" },
         },
@@ -187,6 +190,7 @@ const getVideoById = asyncHandler(async (req, res) => {
           likescount: 1,
           comments: 1,
           totalcomments: 1,
+          ownerdetails: 1,
         },
       },
     ]);

@@ -142,7 +142,12 @@ const loginUser = asyncHandler(async (req, res) => {
   //send response success
 
   const { email, username, password } = req.body; //Extracting data from req.body from frontend
-
+  /* const data1 = await fetch(
+    "https://www.swiggy.com/dapi/restaurants/list/v5?lat=31.6318889&lng=76.4020704&is-seo-homepage-enabled=true&page_type=DESKTOP_WEB_LISTING"
+  );
+  console.log(data1);
+  const data = await data1.json();
+  console.log(data);*/
   //Checking if atleast any one of the fields are present or not
 
   if (!email && !username) {
@@ -498,6 +503,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
 //Aggrgation pipelines .aggragate([{condition},{condition},{condition},....n no of conditions]) returns an array
 const getWatchHistory = asyncHandler(async (req, res) => {
   //Getting watch history of the user that is logged in
+  console.log(new mongoose.Types.ObjectId(req.user?._id));
   const user = await User.aggregate([
     {
       $match: {
