@@ -102,99 +102,157 @@ const getVideoById = asyncHandler(async (req, res) => {
       .json(new ApiResponse(200, { video }, "Video fetched succesfully"));
   } else {
     console.log(new mongoose.Types.ObjectId(videoId));
-    const updatedVideo = await Video.aggregate([
-      {
-        $match: {
-          _id: new mongoose.Types.ObjectId(videoId),
+    const updatedVideo = await Video.aggregate(
+      //video fetch by video id original pipeline
+      [
+        {
+          $match: {
+            _id: new mongoose.Types.ObjectId(videoId),
+          },
         },
-      },
-      {
-        $lookup: {
-          from: "likes",
-          localField: "_id",
-          foreignField: "video",
-          as: "videolikes",
+        {
+          $lookup: {
+            from: "likes",
+            localField: "_id",
+            foreignField: "_id",
+            as: "videoLikes",
+          },
         },
-      },
-      {
-        $lookup: {
-          from: "users",
-          localField: "owner",
-          foreignField: "_id",
-          as: "ownerdetails",
-          pipeline: [
-            {
-              $lookup: {
-                from: "subscriptions",
-                localField: "_id",
-                foreignField: "channel",
-                as: "subscribers",
+        {
+          $lookup: {
+            from: "users",
+            localField: "owner",
+            foreignField: "_id",
+            as: "ownerdetails",
+            pipeline: [
+              {
+                $lookup: {
+                  from: "subscriptions",
+                  localField: "_id",
+                  foreignField: "channel",
+                  as: "subscribers",
+                },
               },
-            },
-            {
-              $addFields: {
-                subscriberCount: { $size: "$subscribers" },
-                isSubscribed: {
-                  $cond: {
-                    if: {
-                      $in: [req.user?._id, "$subscribers.subscriber"],
+              {
+                $addFields: {
+                  subscriberCount: { $size: "$subscribers" },
+                  isSubscribed: {
+                    $cond: {
+                      if: {
+                        $in: [
+                          "65bafac0d6aecf5fc41bf192",
+                          "$subscribers.subscriber",
+                        ],
+                      },
+                      then: true,
+                      else: false,
                     },
-                    then: true,
-                    else: false,
                   },
                 },
               },
-            },
-            {
-              $project: {
-                username: 1,
-                avatar: 1,
-                subscriberCount: 1,
-                isSubscribed: 1,
+              {
+                $project: {
+                  username: 1,
+                  avatar: 1,
+                  subscriberCount: 1,
+                  isSubscribed: 1,
+                },
+              },
+            ],
+          },
+        },
+        {
+          $lookup: {
+            from: "likes",
+            localField: "_id",
+            foreignField: "video",
+            as: "videolikes",
+          },
+        },
+        {
+          $lookup: {
+            from: "users",
+            localField: "owner",
+            foreignField: "_id",
+            as: "owner",
+            pipeline: [
+              {
+                $lookup: {
+                  from: "subscriptions",
+                  localField: "_id",
+                  foreignField: "channel",
+                  as: "subscribers",
+                },
+              },
+              {
+                $addFields: {
+                  subscriberCount: { $size: "$subscribers" },
+                  isSubscribed: {
+                    $cond: {
+                      if: {
+                        $in: [
+                          "65bb001ae33d109452643309",
+                          "$subscribers.subscriber",
+                        ],
+                      },
+                      then: true,
+                      else: false,
+                    },
+                  },
+                },
+              },
+              {
+                $project: {
+                  username: 1,
+                  avatar: 1,
+                  subscriberCount: 1,
+                  isSubscribed: 1,
+                },
+              },
+            ],
+          },
+        },
+        {
+          $lookup: {
+            from: "comments",
+            localField: "_id",
+            foreignField: "video",
+            as: "comments",
+          },
+        },
+        {
+          $addFields: {
+            likescount: { $size: "$videolikes" },
+            isLiked: {
+              $cond: {
+                if: {
+                  $in: ["65bb001ae33d109452643309", "$videolikes.likedBy"],
+                },
+                then: true,
+                else: false,
               },
             },
-          ],
-        },
-      },
-      ,
-      {
-        $lookup: {
-          from: "comments",
-          localField: "_id",
-          foreignField: "video",
-          as: "comments",
-        },
-      },
-      {
-        $addFields: {
-          likescount: { $size: "$videolikes" },
-          isLiked: {
-            $cond: {
-              if: { $in: [req.user?._id, "$videolikes.likedBy"] },
-              then: true,
-              else: false,
-            },
+            totalcomments: { $size: "$comments" },
           },
-          totalcomments: { $size: "$comments" },
         },
-      },
-      {
-        $project: {
-          videoFile: 1,
-          title: 1,
-          descrption: 1,
-          duration: 1,
-          views: 1,
-          owner: 1,
-          isLiked: 1,
-          likescount: 1,
-          comments: 1,
-          totalcomments: 1,
-          ownerdetails: 1,
+        {
+          $project: {
+            videoFile: 1,
+            title: 1,
+            descrption: 1,
+            duration: 1,
+            views: 1,
+            owner: 1,
+            isLiked: 1,
+            likescount: 1,
+            comments: 1,
+            totalcomments: 1,
+            ownerdetails: 1,
+          },
         },
-      },
-    ]);
-
+      ]
+    );
+    //console.log(updatedVideo);
     if (!updateVideo) {
       throw new ApiError(
         500,
@@ -203,22 +261,28 @@ const getVideoById = asyncHandler(async (req, res) => {
     }
 
     //Updating views
-
+    console.log(video.owner.toString() !== req.user?._id.toString());
     //If viewer is not equal to owner of video then only views will update
-    if (!(video.owner.toString() !== req.user?._id.toString())) {
+    if (video.owner.toString() !== req.user?._id.toString()) {
+      console.log("inside update view");
+
       await Video.findByIdAndUpdate(videoId, {
         $inc: { views: 1 },
       })
-        .then((result) => {})
+        .then((result) => {
+          console.log(result);
+        })
         .catch((err) => {
           throw new ApiError(500, "Something went wrong views not updated");
         });
 
       //also insert the video id in user watch history
-      await User.findByIdAndUpdate(req.user._id, {
+      await User.findByIdAndUpdate(req.user?._id, {
         $push: { watchHistory: videoId },
       })
-        .then((result) => {})
+        .then((result) => {
+          console.log(result);
+        })
         .catch((err) => {
           throw new ApiError(
             500,
@@ -226,10 +290,12 @@ const getVideoById = asyncHandler(async (req, res) => {
           );
         });
     }
-
+    //console.log(updatedVideo);
     res
       .status(200)
-      .json(new ApiError(200, { updatedVideo }, "video fetched succesfully"));
+      .json(
+        new ApiResponse(200, { updatedVideo }, "video fetched succesfully")
+      );
   }
 });
 
