@@ -2,7 +2,7 @@ Models Link -https://app.eraser.io/workspace/YtPqZ1VogxGy1jzIDkzj
 
 
 
-This is a assignment given by Hitesh Chaudhary for a twitter backend . 
+
 
 Tech Stack- MongoDB with mongoose ,express js and node js
 
