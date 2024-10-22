@@ -33,5 +33,8 @@ app.use("/api/v1/playlist", playlistRouter);
 app.use("/api/v1/subscription", subscriptionRouter);
 app.use("/api/v1/tweet", tweetRouter);
 app.use("/api/v1/video", videoRouter);
+app.get("/", (req, res) => {
+  res.redirect(`${process.env.DOCUMENTATION_URL}`);
+});
 
 export { app };
