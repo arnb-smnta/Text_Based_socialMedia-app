@@ -23,8 +23,6 @@ const publishAVideo = asyncHandler(async (req, res) => {
   if (!title || !description) {
     throw new ApiError(404, "Title or description not found");
   }
-
-  console.log(req.files);
   const videoFileLocalPath = req.files?.videoFile[0].path;
   const thumbnailLocalPath = req.files?.thumbnail[0].path;
 
@@ -101,7 +99,6 @@ const getVideoById = asyncHandler(async (req, res) => {
       .status(200)
       .json(new ApiResponse(200, { video }, "Video fetched succesfully"));
   } else {
-    console.log(new mongoose.Types.ObjectId(videoId));
     const updatedVideo = await Video.aggregate(
       //video fetch by video id original pipeline
       [
@@ -252,7 +249,6 @@ const getVideoById = asyncHandler(async (req, res) => {
         },
       ]
     );
-    //console.log(updatedVideo);
     if (!updateVideo) {
       throw new ApiError(
         500,
@@ -261,11 +257,8 @@ const getVideoById = asyncHandler(async (req, res) => {
     }
 
     //Updating views
-    console.log(video.owner.toString() !== req.user?._id.toString());
     //If viewer is not equal to owner of video then only views will update
     if (video.owner.toString() !== req.user?._id.toString()) {
-      console.log("inside update view");
-
       await Video.findByIdAndUpdate(videoId, {
         $inc: { views: 1 },
       })
@@ -341,7 +334,7 @@ const updateVideo = asyncHandler(async (req, res) => {
   }
 
   if (thumbnailLocalPath) {
-    const thumbnail = uploadOnCloudinary(thumbnailLocalPath);
+    const thumbnail = await uploadOnCloudinary(thumbnailLocalPath);
 
     if (!thumbnail) {
       throw new ApiError(
@@ -355,9 +348,7 @@ const updateVideo = asyncHandler(async (req, res) => {
   const updatedvideo = await Video.findByIdAndUpdate(
     videoId,
     {
-      $set: {
-        updatedobject,
-      },
+      $set: updatedobject,
     },
     { new: true }
   );

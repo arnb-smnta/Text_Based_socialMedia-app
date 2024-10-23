@@ -25,6 +25,7 @@ const options = {
 const generateAccessandRefreshToken = async (_id) => {
   try {
     const user = await User.findById(_id);
+    console.log(user);
     const accessToken = user.generateAccessToken();
     const refreshToken = user.generateRefreshToken();
 
@@ -87,6 +88,7 @@ return respone to user client
   const avatarLocalPath = req.files?.avatar[0]?.path; //Files does not come from request.body it comes from req.files remember
   //const coverImageLocalPath = req.files?.coverImage[0]?.path;
   //avatar file present or not validation
+
   if (!avatarLocalPath) {
     throw new ApiError(400, "Avatar file is required");
   }
@@ -103,9 +105,8 @@ return respone to user client
   const avatar = await uploadOnCloudinary(avatarLocalPath);
 
   const coverImage = await uploadOnCloudinary(coverImageLocalPath);
-
   if (!avatar) {
-    throw new ApiError(400, "Avatar file is required");
+    throw new ApiError(400, "Avatar file is required cloudinary");
   }
 
   //User Creation
@@ -390,8 +391,7 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
   //TODO: delete old image - assignment
 
   const coverImage = await uploadOnCloudinary(coverImageLocalPath);
-
-  if (!coverImage.url) {
+  if (!coverImage) {
     throw new ApiError(400, "Error while uploading on avatar");
   }
 
