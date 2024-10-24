@@ -40,15 +40,15 @@ const publishAVideo = asyncHandler(async (req, res) => {
     );
   }
 
-  console.log(video);
-
   const publishedvideo = await Video.create({
     title,
     description,
-    videoFile: video,
-    thumbnail: thumbnail,
-    duration: "",
+    videoFile: video.url,
+    thumbnail: thumbnail.url,
+    duration: video.duration,
     owner: req.user?._id,
+    cloudinary_video_public_id: video.public_id,
+    cloudinary_thumbnail_public_id: thumbnail.public_id,
   });
 
   if (!publishedvideo) {
@@ -322,7 +322,7 @@ const updateVideo = asyncHandler(async (req, res) => {
     throw new ApiError(400, "You do not have the rights to edit this video");
   }
 
-  const oldThumbnail = video.thumbnail;
+  const oldThumbnail = video.cloudinary_thumbnail_public_id;
 
   const updatedobject = {};
   if (title) {
@@ -342,7 +342,8 @@ const updateVideo = asyncHandler(async (req, res) => {
         "internal server error new thumbnail not updated"
       );
     }
-    updatedobject.thumbnail = thumbnail;
+    updatedobject.thumbnail = thumbnail.url;
+    updatedobject.cloudinary_thumbnail_public_id = thumbnail.public_id;
   }
 
   const updatedvideo = await Video.findByIdAndUpdate(
@@ -356,7 +357,7 @@ const updateVideo = asyncHandler(async (req, res) => {
   if (!updateVideo) {
     throw new ApiError(500, "Something went wrong video not updated");
   } else {
-    await deleteOnCloudinary(oldThumbnail);
+    deleteOnCloudinary(oldThumbnail, "video");
   }
 
   return res
@@ -392,9 +393,9 @@ const deleteVideo = asyncHandler(async (req, res) => {
     .then(async (result) => {
       console.log("Video deleted from server");
 
-      await deleteOnCloudinary(video.videoFile, "video");
-      await deleteOnCloudinary(video.thumbanail);
-      //delete likesnpm run sa
+      await deleteOnCloudinary(video.cloudinary_video_public_id, "video");
+      await deleteOnCloudinary(video.cloudinary_thumbnail_public_id, "video");
+      //delete likes
       //delete comments
     })
     .catch((err) => {

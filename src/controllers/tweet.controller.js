@@ -6,7 +6,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
 //Edge cases done
-
+//! Have to common aggregatipn pipelines for all the responses
 const createTweet = asyncHandler(async (req, res) => {
   //Create tweet
 
@@ -18,6 +18,7 @@ const createTweet = asyncHandler(async (req, res) => {
   //create tweet in database with user details
 
   const { content } = req.body;
+  console.log(content);
   //checking if content is present or not
   if (!content) {
     throw new ApiError(401, "Error tweet content not found enter tweet");
@@ -90,7 +91,6 @@ const getUserTweets = asyncHandler(async (req, res) => {
       },
     },
   ]);
-  console.log(tweets);
   if (!tweets.length) {
     throw new ApiError(404, "No tweets found");
   }
@@ -180,6 +180,18 @@ const deleteTweet = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "Tweet deleted succesfully"));
 });
 
-const getTweet = asyncHandler(async (req, res) => {});
+const getTweet = asyncHandler(async (req, res) => {
+  const { tweetId } = req.params;
+
+  const tweet = await Tweet.findById(tweetId);
+
+  if (!tweet) {
+    throw new ApiError("Tweet does not exist invalid tweet id");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, tweet, "Tweet fetched succesfully"));
+});
 
 export { createTweet, getUserTweets, updateTweet, deleteTweet, getTweet };

@@ -113,8 +113,8 @@ return respone to user client
 
   const user = await User.create({
     fullName,
-    avatar: avatar,
-    coverImage: coverImage || "",
+    avatar: avatar.url,
+    coverImage: coverImage.url || "",
     email,
     password,
     username: username.toLowerCase(),
