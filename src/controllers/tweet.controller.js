@@ -18,7 +18,6 @@ const createTweet = asyncHandler(async (req, res) => {
   //create tweet in database with user details
 
   const { content } = req.body;
-  console.log(content);
   //checking if content is present or not
   if (!content) {
     throw new ApiError(401, "Error tweet content not found enter tweet");
@@ -189,9 +188,33 @@ const getTweet = asyncHandler(async (req, res) => {
     throw new ApiError("Tweet does not exist invalid tweet id");
   }
 
+  const aggregatedTweet = await Tweet.aggregate([
+    {
+      $match: { _id: new mongoose.Types.ObjectId(tweetId) },
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "owner",
+        foreignField: "_id",
+        as: "owner",
+        pipeline: [
+          {
+            $project: {
+              username: 1,
+              fullName: 1,
+              avatar: 1,
+              _id: 1,
+            },
+          },
+        ],
+      },
+    },
+  ]);
+
   return res
     .status(200)
-    .json(new ApiResponse(200, tweet, "Tweet fetched succesfully"));
+    .json(new ApiResponse(200, aggregatedTweet, "Tweet fetched succesfully"));
 });
 
 export { createTweet, getUserTweets, updateTweet, deleteTweet, getTweet };
