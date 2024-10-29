@@ -168,14 +168,12 @@ const loginUser = asyncHandler(async (req, res) => {
   //checking if user is present or not
 
   if (!user) {
-    console.log("inside user");
     throw new ApiError(401, "Invalid Username or Email signup!!");
   }
 
   const isPasswordValid = await user.isPasswordCorrect(password);
 
   if (!isPasswordValid) {
-    console.log("password wrong function");
     throw new ApiError(401, "Wrong Password");
   }
 

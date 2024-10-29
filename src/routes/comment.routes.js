@@ -1,10 +1,12 @@
 import { Router } from "express";
 import {
-  addComment,
   deleteComment,
   getTweetComments,
   getVideoComments,
   updateComment,
+  addCommentReply,
+  addVideoComment,
+  addTweetComment,
 } from "../controllers/comment.controller.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 
@@ -12,10 +14,13 @@ const router = Router();
 
 router.use(verifyJWT); // Apply verifyJWT middleware to all routes in this file
 
-router.route("/:videoId?/:tweetId?/commentId?").post(addComment);
+router.route("/v/:videoId").get(getVideoComments).post(addVideoComment);
+router.route("/t/:tweetId").get(getTweetComments).post(addTweetComment);
 
-router.route("/v/:videoId").get(getVideoComments);
-router.route("/t/:tweetId").get(getTweetComments);
-router.route("/c/:commentId").delete(deleteComment).patch(updateComment);
+router
+  .route("/c/:commentId")
+  .delete(deleteComment)
+  .patch(updateComment) //Update all commentID
+  .post(addCommentReply); //Reply to commeny
 //tweet comments and comment on comments (reply)
 export default router;

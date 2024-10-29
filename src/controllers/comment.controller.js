@@ -69,7 +69,7 @@ const getVideoComments = asyncHandler(async (req, res) => {
 
 const getTweetComments = asyncHandler(async () => {});
 
-const addComment = asyncHandler(async (req, res) => {
+/*const addComment = asyncHandler(async (req, res) => {
   //check for content
   //Search for the respective Things
   const { videoId, tweetId, commentId } = req.params;
@@ -164,6 +164,100 @@ const addComment = asyncHandler(async (req, res) => {
       .json(new ApiResponse(200, { comment }, "Comment succesfully created "));
   }
 });
+*/
+const addCommentReply = asyncHandler(async (req, res) => {
+  const { commentId } = req.params;
+  const { content } = req.body;
+  const comment = await Comment.findById(commentId);
+
+  if (!comment) {
+    throw new ApiError(404, "Comment not found");
+  }
+  if (!content) {
+    throw new ApiError(400, "Enter some content");
+  }
+
+  let reply = await Comment.create({
+    content,
+    comment: commentId,
+    owner: req.user?._id,
+  });
+  reply = await Comment.findById(reply?._id);
+
+  if (!reply) {
+    throw new ApiError(
+      500,
+      "Something went wrong while creating your reply try again"
+    );
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, { reply }, "Reply created created succesfully"));
+});
+const addVideoComment = asyncHandler(async (req, res) => {
+  const { videoId } = req.params;
+  const { content } = req.body;
+  const video = await Video.findById(videoId);
+
+  if (!video) {
+    throw new ApiError(404, "Video not found");
+  }
+  if (!content) {
+    throw new ApiError(400, "Enter some content");
+  }
+
+  let newcomment = await Comment.create({
+    content: content,
+    video: videoId,
+    owner: req.user._id,
+  });
+
+  newcomment = await Comment.findById(newcomment?._id);
+
+  if (!newcomment) {
+    throw new ApiError(
+      500,
+      "Something went wrong while creating your comment try again"
+    );
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, { newcomment }, "Comment created succesfully"));
+});
+const addTweetComment = asyncHandler(async (req, res) => {
+  const { tweetId } = req.params;
+  const { content } = req.body;
+  const tweet = await Tweet.findById(tweetId);
+
+  if (!tweet) {
+    throw new ApiError(404, "Comment not found");
+  }
+  if (!content) {
+    throw new ApiError(400, "Enter some content");
+  }
+
+  let tweetComment = await Comment.create({
+    content,
+    tweet: tweetId,
+    owner: req.user._id,
+  });
+  tweetComment = await Comment.findById(tweetComment?._id);
+
+  if (!tweetComment) {
+    throw new ApiError(
+      500,
+      "Something went wrong while creating your comment try again"
+    );
+  }
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, { tweetComment }, "comment created succesfully")
+    );
+});
 
 const updateComment = asyncHandler(async (req, res) => {
   // TODO: update a comment
@@ -240,8 +334,10 @@ const deleteComment = asyncHandler(async (req, res) => {
 
 export {
   getVideoComments,
-  addComment,
   updateComment,
   deleteComment,
   getTweetComments,
+  addCommentReply,
+  addVideoComment,
+  addTweetComment,
 };

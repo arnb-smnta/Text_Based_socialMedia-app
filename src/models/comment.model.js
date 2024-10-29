@@ -5,7 +5,7 @@ const commentSchema = new Schema(
   {
     content: { type: String, required: true },
     video: { type: Schema.Types.ObjectId, ref: "Video" }, //Comment on videos
-    owner: { type: Schema.Types.ObjectId, ref: "User" }, //Comment owner
+    owner: { type: Schema.Types.ObjectId, ref: "User", required: true }, //Comment owner
     tweet: { type: Schema.Types.ObjectId, ref: "Tweet" }, //For tweet replies
     comment: { type: Schema.Types.ObjectId, ref: "Comment" }, //For comment replies
   },
