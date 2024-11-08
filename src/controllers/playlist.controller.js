@@ -33,16 +33,10 @@ const createPlaylist = asyncHandler(async (req, res) => {
 });
 
 const getUserPlaylists = asyncHandler(async (req, res) => {
-  const { userId } = req.user._id;
   //TODO: get all user playlists
 
   //Get and check valid id
   //pipeline add video to video is also send total no of videos in the playlist
-
-  if (!isValidObjectId(userId)) {
-    throw new ApiError(404, "enter valid Playlist ID");
-  }
-
   const userPlaylists = await Playlist.aggregate([
     {
       $match: {
@@ -50,11 +44,22 @@ const getUserPlaylists = asyncHandler(async (req, res) => {
       },
     },
     {
-      $lookout: {
+      $lookup: {
         from: "videos",
         localField: "videos",
         foreignField: "_id",
         as: "videos",
+        pipeline: [
+          {
+            $project: {
+              title: 1,
+              thumbnail: 1,
+              description: 1,
+              owner: 1,
+              _id: 1,
+            },
+          },
+        ],
       },
     },
     {
@@ -69,7 +74,7 @@ const getUserPlaylists = asyncHandler(async (req, res) => {
   return res
     .status(200)
     .json(
-      new ApiError(200, { userPlaylists }, "Playlists fetched succesfully")
+      new ApiResponse(200, { userPlaylists }, "Playlists fetched succesfully")
     );
 });
 
