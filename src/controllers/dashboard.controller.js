@@ -39,12 +39,12 @@ const getChannelStats = asyncHandler(async (req, res) => {
     },
     {
       $group: {
-        id: _null,
+        _id: null,
         likescount: {
           $sum: "$likes",
         },
         totalViews: {
-          sum: "$views",
+          $sum: "$views",
         },
         totalvideos: {
           $sum: 1,
@@ -90,7 +90,7 @@ const getChannelVideos = asyncHandler(async (req, res) => {
   const videos = await Video.aggregate([
     {
       $match: {
-        owner: mongoose.Types.ObjectId(req.user?._id),
+        owner: new mongoose.Types.ObjectId(req.user?._id),
       },
     },
     {
@@ -114,7 +114,9 @@ const getChannelVideos = asyncHandler(async (req, res) => {
     throw new ApiError(500, "Internal server error unable to fetch video data");
   }
 
-  return res.status(200).json(200, { videos }, "Video fetched succesfully");
+  return res
+    .status(200)
+    .json(new ApiResponse(200, { videos }, "Video fetched succesfully"));
 });
 
 export { getChannelStats, getChannelVideos };

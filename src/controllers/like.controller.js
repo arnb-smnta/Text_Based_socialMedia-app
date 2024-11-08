@@ -5,6 +5,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { Video } from "../models/video.model.js";
 import { Tweet } from "../models/tweet.model.js";
+import { Comment } from "../models/comment.model.js";
 //Edge cases done
 const toggleVideoLike = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
@@ -68,12 +69,12 @@ const toggleCommentLike = asyncHandler(async (req, res) => {
   //Check if liked already or not
   //delete if already liked or create
   if (!isValidObjectId(commentId)) {
-    throw new ApiError(404, "Comment not found");
+    throw new ApiError(404, "Comment Id not valid");
   }
 
   const comment = await Comment.findById(commentId);
 
-  if (comment) {
+  if (!comment) {
     throw new ApiError(400, "Comment not found");
   }
 
